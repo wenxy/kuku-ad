@@ -1,6 +1,6 @@
 //const _host = 'https://adsdk.kuku168.cn'
 const _host = 'http://192.168.0.88:9060'
-
+const _mock = false
 const _initAdURL = _host + '/Advert/reportSystemInfo';
 const _listAdsURL = _host + '/Advert/listByAppId'
 const _reportUserClickURL = _host + '/Advert/reportUserAction'
@@ -55,6 +55,7 @@ export default class BannerAd {
           that.onLoadCallback()
         }
       }).catch((err) => {
+        console.log(err)
         if (that.onErrorCallback) {
           that.onErrorCallback(err)
         }
@@ -172,23 +173,27 @@ export default class BannerAd {
         })
         return
       }
+
       wx.request({
         url: _initAdURL,
         data: systeminfo,
         header: {
-          'content-type': 'x-www-form-urlencoded',
-          'Cookie': 'KUKU_UUID=' + that.uuid
+          'content-type': 'application/x-www-form-urlencoded',
+          'Cookie': 'KUKU_UUID='
         },
         method: 'POST',
         complete: function (res) {
           console.log('KUKU Banner广告组件->KUKUAD INIT RESULT', res)
-          that.uuid = 'mock-uuid-1234567890'
-          wx.setStorageSync('KUKU_UUID', 'mock-uuid-1234567890')
-          resolve({
-            uuid: 'mock-uuid-1234567890'
-          })
-          if (res.statusCode == 200 && res.data.code == 1 && res.data.uuid) {
-            wx.setStorageSync('KUKU_UUID', res.data.uuid)
+          if (_mock){
+            that.uuid = 'mock-uuid-1234567890'
+            wx.setStorageSync('KUKU_UUID', 'mock-uuid-1234567890')
+            resolve({
+              uuid: 'mock-uuid-1234567890'
+            })
+          }         
+          if (res.statusCode == 200 && res.data.code == 1 && res.data.data.uuid) {
+            that.uuid = res.data.uuid
+            wx.setStorageSync('KUKU_UUID', res.data.data.uuid)
             resolve(res.data)
             console.log('KUKU Banner广告组件->KUKUAD INIT SUCCESSFULL!')
           } else {
@@ -209,81 +214,33 @@ export default class BannerAd {
       wx.request({
         url: _listAdsURL,
         data: {
-          appId: that.appId
+          appId: that.appId,
+          type:1
         },
         header: {
-          'content-type': 'x-www-form-urlencoded',
-          'Cookie': 'KUKU_UUID=' + that.uuid
+          'content-type': 'application/x-www-form-urlencoded',
+          'Cookie': 'KUKU_UUID=' + that.uuid || ''
         },
         method: 'POST',
         complete: function (res) {
           console.log('KUKU Banner广告组件->KUKUAD  RES LOAD RESULT', res)
-          resolve({
-            show: true,
-            type: 8,
-            materials: [{
-              id: 1,
-              appId: 'wx123456790',
-              img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
-              suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
-              path: '',
-              extData: ''
-            },
-            {
-              id: 1,
-              appId: '',
-              img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
-              suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
-              path: '',
-              extData: ''
-            },
-            {
-              id: 2,
-              appId: 'wx123456790',
-              img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
-              suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
-              path: '',
-              extData: ''
-            }, {
-              id: 3,
-              appId: 'wx123456790',
-              img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
-              suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
-              path: '',
-              extData: ''
-            }, {
-              id: 4,
-              appId: 'wx123456790',
-              img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
-              suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
-              path: '',
-              extData: ''
-            }, {
-              id: 5,
-              appId: 'wx123456790',
-              img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
-              suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
-              path: '',
-              extData: ''
-            }, {
-              id: 6,
-              appId: 'wx123456790',
-              img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
-              suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
-              path: '',
-              extData: ''
-            }, {
-              id: 7,
-              appId: 'wx123456790',
-              img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
-              suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
-              path: '',
-              extData: ''
-            }
-            ]
-          })
-          if (res.statusCode == 200 && res.data.code == 1 && res.data.materials) {
-            resolve(res.data)
+          if (_mock) {
+            resolve({
+              show: true,
+              type: 1,
+              materials: [{
+                id: 1,
+                appId: 'wx123456790',
+                img: 'https://imgweb.kuku168.cn/c8f42f85bee94ffba49962923a54448c',
+                suncode: 'https://imgweb.kuku168.cn/974ee250582d499785f2b17aeba5109c',
+                path: '',
+                extData: ''
+              }
+              ]
+            })
+          }          
+          if (res.statusCode == 200 && res.data.code == 1 && res.data.data.materials) {
+            resolve(res.data.data)
             console.log('KUKU Banner广告组件->KUKUAD RES LOAD SUCCESSFULL!')
           } else {
             reject('KUKUAD RES LOAD FAIL.')
@@ -336,23 +293,23 @@ export default class BannerAd {
   }
 
   _calculateSprit() {
-    if (!this.adData || !this.adData.type) return
-    if (this.adData.type == 1) {
+    if (!this.adData || !this.adData.layout) return
+    if (this.adData.layout == 1) {
       this._calculateSprit1()
     }
-    if (this.adData.type == 2) {
+    if (this.adData.layout == 2) {
       this._calculateSprit2()
     }
 
-    if (this.adData.type == 3) {
+    if (this.adData.layout == 3) {
       this._calculateSprit3()
     }
 
-    if (this.adData.type == 4) {
+    if (this.adData.layout == 4) {
       this._calculateSprit4()
     }
 
-    if (this.adData.type == 5 || this.adData.type == 6 || this.adData.type == 7 || this.adData.type == 8) {
+    if (this.adData.layout == 5 || this.adData.layout == 6 || this.adData.layout == 7 || this.adData.layout == 8) {
       this._calculateSprit5678()
     }
   }
@@ -538,11 +495,12 @@ export default class BannerAd {
         adId: adId,
         action: action,
         status: status,
+        type:1,
         clickAction: clickAction
       },
       header: {
-        'content-type': 'x-www-form-urlencoded',
-        'Cookie': 'KUKU_UUID=' + that.uuid
+        'content-type': 'application/x-www-form-urlencoded',
+        'Cookie': 'KUKU_UUID=' + that.uuid || ''
       },
       method: 'POST',
       complete: function (res) {

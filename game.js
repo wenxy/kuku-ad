@@ -1,10 +1,17 @@
-import './js/libs/weapp-adapter'
-import './js/libs/symbol'
+//import './js/libs/weapp-adapter'
+//import './js/libs/symbol'
 
-import Main from './js/main'
 
-new Main()
+//import Main from './js/main'
+//new Main()
 
+//首次调用创建的是显示在屏幕上的画布
+let ctx = wx.createCanvas().getContext('2d')
+
+ctx.fillStyle = "#ffffff";
+ctx.fillRect(0, 0, wx.getSystemInfoSync().windowWidth, wx.getSystemInfoSync().windowHeight);
+ctx.fillStyle = "#000";
+ctx.fillText("我是一个测试游戏画布", 110, 110);
 
 
 import KUKUBannerAd from './js/kuku/kuku-banner-ad'
@@ -12,7 +19,7 @@ import KUKUBannerAd from './js/kuku/kuku-banner-ad'
 //参数一：您的小游戏APPID，后台会根据APPID获取分配的广告素材
 //参数二: top,广告显示距离顶部的距离。-1置底显示
 //参数三:width，广告组件的尺寸会根据开发者设置的宽度，进行等比缩放，缩放的范围是 300 到 屏幕宽度。屏幕宽度是以逻辑像素为单位的宽度，通过 wx.getSystemInfoSync() 可以获取到
-let BannerAd = new KUKUBannerAd('23424sfawsrwdfas234', -1, 0, canvas.getContext('2d'))
+let BannerAd = new KUKUBannerAd('wxd1ed63fe7907c9bf', -1, 0, null)
 //监听广告是否加载完成，加载完成后即可调用show()进行广告显示
 BannerAd.onLoad(() => {
   BannerAd.show()
@@ -28,8 +35,9 @@ BannerAd.onHide(() => {
   console.log('Banner Ad on hide')
 })
 //监听广告显示回调
-BannerAd.onShow((sprits) => {
-  console.log('Banner Ad on show', JSON.stringify(sprits))
+BannerAd.onShow((canvas) => {
+  console.log('on load', canvas)
+  ctx.drawImage(canvas, 0, 0)
 })
 //监听广告尺寸变化回调，返回resize后的广告width、height
 BannerAd.onResize((obj) => {
@@ -52,6 +60,8 @@ setTimeout(() => {
 }, 15000)
 
 
+ 
+/*
 import KUKUICONAd from './js/kuku/kuku-icon-ad'
 //定义ICON广告组件对象
 //参数一：您的小游戏APPID，后台会根据APPID获取分配的广告素材
@@ -59,7 +69,7 @@ import KUKUICONAd from './js/kuku/kuku-icon-ad'
 //参数三: top,广告显示距离顶部的距离。默认取值-1置底显示
 //参数四:width，广告组件的尺寸，最小30*30，最大200*200
 //参数五：画布上下文对象
-let IconAd = new KUKUICONAd('23424sfawsrwdfas234',10,100, 60, canvas.getContext('2d'))
+let IconAd = new KUKUICONAd('wxd1ed63fe7907c9bf', 10, 100, 60, ctx)
 //监听广告是否加载完成，加载完成后即可调用show()进行广告显示
 IconAd.onLoad(() => {
   IconAd.show()
@@ -101,5 +111,7 @@ setTimeout(() => {
   //IconAd.style(1000, 375)
 }, 15000)
 
+let sprit
+sprit = IconAd.getRandom() 
 
- 
+ */

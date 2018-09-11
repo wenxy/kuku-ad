@@ -22,17 +22,16 @@ const {
   windowHeight,
   SDKVersion
 } = wx.getSystemInfoSync()
- 
-function Image() {
-  return wx.createImage()
-}
+
+
+
 export default class BannerAd {
 
-  constructor(appId = '', top = -1, width = 300, mainCtx) {
-    this.visable=false
-    this.canvas = wx.createCanvas()
-    this.ctx = this.canvas.getContext('2d')
-    this.mainCtx = mainCtx
+  constructor(appId = '', top = -1, width = 300,mainCtx) {
+    this.visable = false
+    this.mainCtx=mainCtx
+    this.sharedCanvas = wx.createCanvas();     
+    this.shareCtx = sharedCanvas.getContext('2d');
     if (!appId) {
       let err = new Error('appId参数不能为空');
       throw err
@@ -51,16 +50,13 @@ export default class BannerAd {
       listAdResPromise.then((data) => {
         that.adData = data
         that.visable = that.adData.show
-        //只有服务器开启了广告显示，才监听对应点击事件
-        if (that.adData.show) { 
-          that._calculateSprit()           
-          wx.onTouchStart((res) => {
-            that._touchEventHandler(res)
-          })
-        }   
+        that._calculateSprit()
+        that.touchHandler = that._touchEventHandler.bind(that)
+        canvas.addEventListener('touchstart', that.touchHandler)
         if (that.onLoadCallback) {
           that.onLoadCallback()
         }
+        that._drawShareCanvas()
       }).catch((err) => {
         console.log(err)
         if (that.onErrorCallback) {
@@ -134,25 +130,11 @@ export default class BannerAd {
   }
 
   show() {
-    var that = this 
-    //服务端配置了显示微信广告，则不显示自由广告
-    if (that.adData.showWxBannerAd) {
-      let bannerAd = wx.createBannerAd({
-        adUnitId: that.adData.bannerAdUnitId,
-        style: {
-          left: that.left,
-          top: that.top,
-          width: that.width//
-        }
-      })
-      bannerAd.show()
-    } else if (that.adData.show) {
-      that.visable = true
-      that._start()
-      that._reportUserAction(0, ACTION_SHOW, 0, '')
-      if (this.onShowCallback) this.onShowCallback(that.canvas)
-    } 
-
+    var that = this
+    that.visable = true
+    that._start()
+    that._reportUserAction(0, ACTION_SHOW, 0, '')
+    if (this.onShowCallback) this.onShowCallback(that.sprits)
   }
 
   hide() {
@@ -161,26 +143,19 @@ export default class BannerAd {
     clearInterval(this.intervalHold)
     if (this.onHideCallback) this.onHideCallback()
     this._reportUserAction(0, ACTION_HIDE, 0, '')
-    wx.offTouchEnd(()=>{
-      consoel.log('hide ad then off touched')
-    })
   }
 
   _start() {
-    var that = this   
-    that.intervalHold = setInterval(function () {
+    var that = this
+    this.intervalHold = setInterval(function () {
       that._cancelFrame()
       that.aniId = that._requestFrame();
-    }.bind(that), 100)     
+    }.bind(that), 10)
   }
 
-  _loop() {  
-    //console.log('_loop',this.mainCtx)  
-    this._render()
-    if(this.mainCtx){      
-      this.mainCtx.drawImage(this.canvas, 0, 0)
-      this.aniId = this._requestFrame()
-    } 
+  _loop() {
+    this.mainCtx.drawImage(this.sharedCanvas,0,0)
+    this.aniId = this._requestFrame()
   }
 
   /**
@@ -212,13 +187,13 @@ export default class BannerAd {
         method: 'POST',
         complete: function (res) {
           console.log('KUKU Banner广告组件->KUKUAD INIT RESULT', res)
-          if (_mock){
+          if (_mock) {
             that.uuid = 'mock-uuid-1234567890'
             wx.setStorageSync('KUKU_UUID', 'mock-uuid-1234567890')
             resolve({
               uuid: 'mock-uuid-1234567890'
             })
-          }         
+          }
           if (res.statusCode == 200 && res.data.code == 1 && res.data.data.uuid) {
             that.uuid = res.data.uuid
             wx.setStorageSync('KUKU_UUID', res.data.data.uuid)
@@ -243,7 +218,7 @@ export default class BannerAd {
         url: _listAdsURL,
         data: {
           appId: that.appId,
-          type:1
+          type: 1
         },
         header: {
           'content-type': 'application/x-www-form-urlencoded',
@@ -256,8 +231,6 @@ export default class BannerAd {
             resolve({
               show: true,
               type: 1,
-              showWxBannerAd:true,
-              bannerAdUnitId:'adunit-70587b04b575005f',
               materials: [{
                 id: 1,
                 appId: 'wx123456790',
@@ -268,7 +241,7 @@ export default class BannerAd {
               }
               ]
             })
-          }          
+          }
           if (res.statusCode == 200 && res.data.code == 1 && res.data.data.materials) {
             resolve(res.data.data)
             console.log('KUKU Banner广告组件->KUKUAD RES LOAD SUCCESSFULL!')
@@ -281,43 +254,32 @@ export default class BannerAd {
   }
 
   _requestFrame() {
-    return window.requestAnimationFrame(this._loop.bind(this));
+    return window.requestAnimationFrame(this._loop.bind(this), canvas);
   }
 
   _cancelFrame() {
     window.cancelAnimationFrame(this.aniId);
   }
 
-  _render() { 
-    
-    if (!this.visable) {
-     // this._cancelFrame()
+  _drawShareCanvas() { 
+    if (!this.visable) { 
       return
-    }
+    } 
+    try {       
      
-    try {
-      
-      let ctx = this.ctx
-      //ctx.globalCompositeOperation = "xor";
-   //   console.log('Canvas context', ctx)
       if (!this.sprits || this.sprits.length == 0) {
         return
-      }
-    //  console.log('2')
-     // ctx.save()
-      ctx.clearRect(this.left, this.top, this.width, this.height)
+      } 
       for (let i in this.sprits) {
         let sprit = this.sprits[i]
-        ctx.drawImage(
+        this.shareCtx.drawImage(
           sprit.img,
           sprit.startX,
           sprit.startY,
           sprit.w,
           sprit.h
-        ) 
+        )
       } 
-  //    ctx.restore()
-      //console.log('i am draw')     
     } catch (err) {
       if (this.onErrorCallback) this.onErrorCallback(err)
     }
@@ -466,7 +428,7 @@ export default class BannerAd {
     this.sprits.push(sprit)
   }
   _touchEventHandler(e) {
-    
+    e.preventDefault()
     if (!this.visable || !this.sprits || this.sprits.length == 0) return false
 
     var that = this
@@ -526,7 +488,7 @@ export default class BannerAd {
         adId: adId,
         action: action,
         status: status,
-        type:1,
+        type: 1,
         clickAction: clickAction
       },
       header: {

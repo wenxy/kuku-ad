@@ -23,7 +23,10 @@ const {
   SDKVersion
 } = wx.getSystemInfoSync()
 
-
+function Image() {
+  return wx.createImage()
+}
+const canvas = wx.createCanvas()
 
 export default class IconAd {
 
@@ -47,11 +50,17 @@ export default class IconAd {
       let listAdResPromise = that._listAdRes()
       listAdResPromise.then((data) => {
         that.adData = data
-        that.visable = that.adData.show
-        that.interval = that.adData.interval || 5000
-        that._calculateSprit()
-        that.touchHandler = that._touchEventHandler.bind(that)
-        canvas.addEventListener('touchstart', that.touchHandler)
+        that.visable = that.adData.show 
+        //只有服务器开启了广告显示，才监听对应点击事件
+        if (that.adData.show ){
+          that.interval = that.adData.interval || 5000
+          that._calculateSprit()
+          //that.touchHandler = that._touchEventHandler.bind(that)
+          //canvas.addEventListener('touchstart', that.touchHandler)          
+          wx.onTouchStart((res) => { 
+            that._touchEventHandler(res)
+          })
+        }       
         if (that.onLoadCallback) {
           console.log('Icon onLoad ...', that.currentSprit)
           that.onLoadCallback()
@@ -128,10 +137,15 @@ export default class IconAd {
 
   show() {
     var that = this
-    that.visable = true
-    that._start()
-    that._reportUserAction(0, ACTION_SHOW, 0, '')
-    if (that.onShowCallback) that.onShowCallback(that.currentSprit)
+    //服务端配置了显示微信广告，则不显示自由广告,为什么不呢，因为ICON的的尺寸和微信banner广告尺寸不同，会遮蔽游戏区域
+    if (that.adData.showWxBannerAd){
+        
+    } else if (that.adData.show){
+      that.visable = true
+      that._start()
+      that._reportUserAction(0, ACTION_SHOW, 0, '')
+      if (that.onShowCallback) that.onShowCallback(that.currentSprit)
+    } 
   }
 
   hide() {
@@ -240,6 +254,8 @@ export default class IconAd {
             resolve({
               show: true,
               type: 1,
+              showWxBannerAd: true,
+              bannerAdUnitId: 'adunit-70587b04b575005f',
               materials: [{
                 id: 1,
                 appId: 'wx123456790',
@@ -327,14 +343,13 @@ export default class IconAd {
     setInterval(function(){that.getRandom()},that.interval||5000)    
   }
 
-  _touchEventHandler(e) {
-    e.preventDefault()
+  _touchEventHandler(e) {  
     if (!this.visable || !this.currentSprit) return false
 
     var that = this
     let x = e.touches[0].clientX
     let y = e.touches[0].clientY
-    //console.log('touch x,y', x, y) 
+    console.log('touch x,y', x, y) 
     let sprit = this.currentSprit
     if (x >= sprit.startX && x <= sprit.endX && y >= sprit.startY && y <= sprit.endY && sprit.data) {
       if (sprit.data.appId) {

@@ -138,6 +138,8 @@ export default class Main {
         canvas.addEventListener('touchstart', this.touchHandler)
       }
     }
+
+    //ctx.drawImage(sharedCanvas,0,0)
   }
 
   // 游戏逻辑更新主函数
